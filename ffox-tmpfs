@@ -1,0 +1,185 @@
+# !/bin/bash
+### BEGIN INIT INFO
+# Provides:          firefox-tmpfs
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: firefox-tmpfs
+# Description:       Sync mozilla preferences to tmpfs 
+#
+# An initial backup is always kept in ~/.mozilla_ref
+# In case of crash, firefox-tmpfs tries to recover your old profile at startup
+#
+# Author: Spencer Rathbun <spencerrathbun@gmail.com>
+#
+### END INIT INFO
+
+# Do NOT "set -e"
+
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="Syncronize firefox profile in tmpfs to hd with rsync"
+NAME=ffox-tmpfs
+DAEMON=/usr/sbin/$NAME
+DAEMON_ARGS=""
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+
+# set defaults
+[ -z "$TMPFS" ] && TMPFS=/tmp
+[ -z "$USERS" ] && USERS="`ls -d -c1 /home/*/.mozilla | cut -d/ -f3`"
+
+# source application-specific settings
+[ -f /etc/firefox-tmpfs.conf ] && . /etc/firefox-tmpfs.conf
+
+# exit if $TMPFS does not exist
+[ ! -z "$TMPFS" ] && [ ! -d "$TMPFS" ] && exit 1
+
+# delete repeated users in configuration file
+[ -n "$USERS" ] && USERS=`echo $USERS | tr " " "\n" | uniq`
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+# and status_of_proc is working.
+. /lib/lsb/init-functions
+
+#
+# Function that starts the daemon/service
+#
+do_start()
+{
+	# Return
+	#   0 if daemon has been started
+	#   1 if daemon was already running
+	#   2 if daemon could not be started
+  for user in $USERS ; do
+    if [ -h /home/$user/.mozilla ] && [ -d /home/$user/.mozilla_ref ] ; then
+    # In case of crash, if old symlinks to $TMPFS still exists, use the old profile
+    rm /home/$user/.mozilla
+    mv /home/$user/.mozilla_ref /home/$user/.mozilla
+    fi
+    if [ -d /home/$user/.mozilla ] && [ ! -d /home/$user/.mozilla_ref ] ; then
+    # Create a directory in $TMPFS, symlink it with ~/.mozilla
+    mkdir -p $TMPFS/$user.mozilla
+    mv /home/$user/.mozilla /home/$user/.mozilla_ref
+    ln -s $TMPFS/$user.mozilla /home/$user/.mozilla
+    # sync mozilla directory to tmpfs
+    rsync -a -q /home/$user/.mozilla_ref/ /home/$user/.mozilla/
+    fi
+  done
+  return 0
+	# Add code here, if necessary, that waits for the process to be ready
+	# to handle requests from services started subsequently which depend
+	# on this one.  As a last resort, sleep for some time.
+}
+
+#
+# Function that stops the daemon/service
+#
+do_stop()
+{
+	# Return
+	#   0 if daemon has been stopped
+	#   1 if daemon was already stopped
+	#   2 if daemon could not be stopped
+	#   other if a failure occurred
+  for user in $USERS ; do
+    if [ -h /home/$user/.mozilla ] && [ -d /home/$user/.mozilla_ref ] ; then
+    rsync -a -q --delete /home/$user/.mozilla/ /home/$user/.mozilla_ref/
+    rm /home/$user/.mozilla
+    mv /home/$user/.mozilla_ref /home/$user/.mozilla
+    fi
+  done
+  return 0
+}
+
+#
+# Function that sends a SIGHUP to the daemon/service
+#
+do_reload() {
+	#
+	# If the daemon can reload its configuration without
+	# restarting (for example, when it is sent a SIGHUP),
+	# then implement that here.
+	#
+	start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
+	return 0
+}
+
+do_save() {
+  # 
+  # save the current settings
+  # return 0 if success
+  # return 1 if failure
+  for user in $USERS ; do
+    if [ -h /home/$user/.mozilla ] && [ -d /home/$user/.mozilla_ref ] ; then
+    rsync -a -q --delete /home/$user/.mozilla/ /home/$user/.mozilla_ref/
+    fi
+  done
+  return 0
+}
+
+case "$1" in
+  start)
+	  [ "$VERBOSE" != no ] && log_daemon_msg "Sync firefox profiles from hd to tmpfs"
+    do_start
+    case "$?" in
+      0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+      2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
+    ;;
+  stop)
+    [ "$VERBOSE" != no ] && log_daemon_msg "Sync firefox profiles from tmpfs to hd"
+    do_stop
+    case "$?" in
+      0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+      2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
+    ;;
+  status)
+       status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+       ;;
+  restart|force-reload)
+	#
+	# If the "reload" option is implemented then remove the
+	# 'force-reload' alias
+	#
+	log_daemon_msg "Restarting $DESC" "$NAME"
+	do_stop
+	case "$?" in
+	  0|1)
+		do_start
+		case "$?" in
+			0) log_end_msg 0 ;;
+			1) log_end_msg 1 ;; # Old process is still running
+			*) log_end_msg 1 ;; # Failed to start
+		esac
+		;;
+	  *)
+	  	# Failed to stop
+		log_end_msg 1
+		;;
+	esac
+	;;
+  save)
+    [ "$VERBOSE" != no ] && log_daemon_msg "Sync firefox profiles from tmpfs to hd"
+    do_save
+    case "$?" in
+      0) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+      2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
+    ;;
+  *)
+	#echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
+	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload|save}" >&2
+	exit 3
+	;;
+esac
+
+:
+
+# vim:set ts=2 sw=2 ft=sh et:
