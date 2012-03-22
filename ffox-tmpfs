@@ -1,20 +1,19 @@
-# !/bin/bash
+# !/bin/sh
 ### BEGIN INIT INFO
-# Provides:          firefox-tmpfs
-# Required-Start:    $remote_fs $syslog
-# Required-Stop:     $remote_fs $syslog
+# Provides:          ffox-tmpfs
+# Required-Start:    $all
+# Required-Stop:     $all
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: firefox-tmpfs
 # Description:       Sync mozilla preferences to tmpfs 
+### END INIT INFO
+
+# Author: Spencer Rathbun <spencerrathbun@gmail.com>
 #
 # An initial backup is always kept in ~/.mozilla_ref
 # In case of crash, firefox-tmpfs tries to recover your old profile at startup
 #
-# Author: Spencer Rathbun <spencerrathbun@gmail.com>
-#
-### END INIT INFO
-
 # Do NOT "set -e"
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script

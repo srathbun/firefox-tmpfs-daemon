@@ -2,6 +2,8 @@
 
 `firefox-tmpfs-daemon` in an init script for Debian based linux systems. Available from [github](http://github.com/srathbun/firefox-tmpfs-daemon). It synchronizes all ~/.mozilla directories to tmpfs at boot and stop time.
 
+Please note that the current version does not auto start! I have not had the time to track this issue down. If you find it, please issue a pull request. 
+
 Inspired by [AUR](https://aur.archlinux.org/packages.php?ID=48746).
 
 **Installation**
