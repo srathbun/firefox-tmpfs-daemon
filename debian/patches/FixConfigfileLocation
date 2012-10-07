@@ -1,0 +1,35 @@
+--- firefox-tmpfs-daemon.orig/ffox-tmpfs
++++ firefox-tmpfs-daemon/ffox-tmpfs
+@@ -1,6 +1,6 @@
+-# !/bin/sh
++#! /bin/sh
+ ### BEGIN INIT INFO
+-# Provides:          ffox-tmpfs
++# Provides:          firefox-tmpfs-daemon
+ # Required-Start:    $all
+ # Required-Stop:     $all
+ # Default-Start:     2 3 4 5
+@@ -19,19 +19,19 @@
+ # PATH should only include /usr/* if it runs after the mountnfs.sh script
+ PATH=/sbin:/usr/sbin:/bin:/usr/bin
+ DESC="Syncronize firefox profile in tmpfs to hd with rsync"
+-NAME=ffox-tmpfs
++NAME=firefox-tmpfs-daemon
+ DAEMON=/usr/sbin/$NAME
+ DAEMON_ARGS=""
+ PIDFILE=/var/run/$NAME.pid
+ SCRIPTNAME=/etc/init.d/$NAME
+ 
++# source application-specific settings
++[ -f /etc/default/firefox-tmpfs-daemon ] && . /etc/default/firefox-tmpfs-daemon
++
+ # set defaults
+ [ -z "$TMPFS" ] && TMPFS=/tmp
+ [ -z "$USERS" ] && USERS="`ls -d -c1 /home/*/.mozilla | cut -d/ -f3`"
+ 
+-# source application-specific settings
+-[ -f /etc/firefox-tmpfs.conf ] && . /etc/firefox-tmpfs.conf
+-
+ # exit if $TMPFS does not exist
+ [ ! -z "$TMPFS" ] && [ ! -d "$TMPFS" ] && exit 1
+ 
