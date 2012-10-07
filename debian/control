@@ -1,0 +1,18 @@
+Source: firefox-tmpfs-daemon
+Section: web
+Priority: optional
+Maintainer: Youhei SASAKI <uwabami@gfd-dennou.org>
+Build-Depends: debhelper (>= 9.0.15~)
+Standards-Version: 3.9.3
+Homepage: https://github.com/srathbun/firefox-tmpfs-daemon
+#Vcs-Git: git://git.debian.org/collab-maint/firefox-tmpfs-daemon.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/firefox-tmpfs-daemon.git;a=summary
+
+Package: firefox-tmpfs-daemon
+Architecture: all
+Depends: ${misc:Depends}, iceweasel
+Description: Sync mozilla preferences to tmpfs (ramdisk)
+ The firefox-tmpfs-daemon in an init script for Debian based systems.
+ .
+ It synchronizes all ~/.mozilla directories to tmpfs at boot and stop
+ time.

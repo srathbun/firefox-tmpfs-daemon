@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+%:
+	dh $@ 
+
+override_dh_auto_install:
+	cp $(CURDIR)/ffox-tmpfs \
+	  $(CURDIR)/debian/firefox-tmpfs-daemon.init
+	chmod 644 $(CURDIR)/debian/firefox-tmpfs-daemon.init
+	cp $(CURDIR)/firefox-tmpfs.conf \
+	  $(CURDIR)/debian/firefox-tmpfs-daemon.default
+	dh_auto_install
+
+override_dh_auto_clean:
+	rm -f $(CURDIR)/debian/firefox-tmpfs-daemon.init
+	rm -f $(CURDIR)/debian/firefox-tmpfs-daemon.default
+	dh_auto_clean
